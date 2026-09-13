@@ -458,6 +458,14 @@ input:focus {
   line-height: 1.7;
 }
 
+.logo {
+  display: block;
+
+  width: min(100%, 300px);
+  height: auto;
+
+  margin-bottom: 20px;
+}
 
 /* SMALL SCREEN */
 
