@@ -24,8 +24,6 @@ document.addEventListener(
 
     setupEvents();
 
-    setupSignature();
-
   }
 );
 
@@ -667,28 +665,21 @@ function showPerson(
 
   details.innerHTML =
     html;
-
-
+  
+  
   /*
-   * Bersihkan tanda tangan
-   * setiap kali peserta baru ditemukan.
+   * Bersihkan tanda tangan sebelumnya
    */
-
-  clearSignature();
-
+  hasSignature = false;
+  
+  
+  /*
+   * Canvas baru diinisialisasi SETELAH
+   * personSection terlihat.
+   */
   requestAnimationFrame(() => {
   
-    resizeCanvas();
-  
-    /*
-     * Resize sekali lagi setelah browser
-     * benar-benar menyelesaikan layout.
-     */
-    setTimeout(() => {
-  
-      resizeCanvas();
-  
-    }, 100);
+    setupSignature();
   
   });
 
@@ -705,162 +696,53 @@ function setupSignature() {
   );
 
   if (!canvas) {
-    console.error('Canvas tanda tangan tidak ditemukan.');
+    console.error(
+      'Canvas tidak ditemukan.'
+    );
     return;
   }
+
 
   ctx = canvas.getContext('2d');
 
-  /*
-   * Konfigurasi tampilan garis
-   */
-  setupCanvasStyle();
 
   /*
-   * Ukuran awal.
-   * Jika masih hidden, fungsi akan dilewati.
+   * Ambil ukuran kotak yang SUDAH TERLIHAT
    */
-  resizeCanvas();
-
-  /*
-   * Resize ketika ukuran layar berubah
-   */
-  window.addEventListener(
-    'resize',
-    resizeCanvas
-  );
-
-
-  /*
-   * ==========================
-   * POINTER EVENTS
-   * ==========================
-   */
-
-  canvas.addEventListener(
-    'pointerdown',
-    startDrawing,
-    { passive: false }
-  );
-
-  canvas.addEventListener(
-    'pointermove',
-    draw,
-    { passive: false }
-  );
-
-  canvas.addEventListener(
-    'pointerup',
-    stopDrawing,
-    { passive: false }
-  );
-
-  canvas.addEventListener(
-    'pointercancel',
-    stopDrawing,
-    { passive: false }
-  );
-
-
-  /*
-   * ==========================
-   * TOUCH FALLBACK
-   * ==========================
-   *
-   * Untuk browser yang tidak
-   * menangani Pointer Events
-   * dengan baik.
-   */
-
-  canvas.addEventListener(
-    'touchstart',
-    handleTouchStart,
-    { passive: false }
-  );
-
-  canvas.addEventListener(
-    'touchmove',
-    handleTouchMove,
-    { passive: false }
-  );
-
-  canvas.addEventListener(
-    'touchend',
-    handleTouchEnd,
-    { passive: false }
-  );
-
-}
-
-
-/* =========================================
-   STYLE CANVAS
-========================================= */
-
-function setupCanvasStyle() {
-
-  if (!ctx) {
-    return;
-  }
-
-  ctx.lineWidth = 2.5;
-
-  ctx.lineCap = 'round';
-
-  ctx.lineJoin = 'round';
-
-  ctx.strokeStyle = '#17181a';
-
-}
-
-
-/* =========================================
-   RESIZE CANVAS
-========================================= */
-
-function resizeCanvas() {
-
-  if (!canvas) {
-    return;
-  }
-
   const rect =
     canvas.getBoundingClientRect();
 
-  /*
-   * Canvas belum terlihat.
-   */
+
+  const width =
+    Math.round(rect.width);
+
+  const height =
+    Math.round(rect.height);
+
+
+  console.log(
+    'Canvas size:',
+    width,
+    height
+  );
+
+
   if (
-    rect.width <= 0 ||
-    rect.height <= 0
+    width <= 0 ||
+    height <= 0
   ) {
+
+    console.error(
+      'Canvas memiliki ukuran 0.'
+    );
+
     return;
-  }
-
-
-  /*
-   * Simpan gambar lama
-   * apabila ada tanda tangan.
-   */
-  let oldImage = null;
-
-  if (
-    hasSignature &&
-    canvas.width > 0 &&
-    canvas.height > 0
-  ) {
-
-    oldImage =
-      canvas.toDataURL('image/png');
 
   }
 
 
   /*
-   * Device Pixel Ratio
-   *
-   * Maksimal 2 agar ukuran file
-   * tidak terlalu besar.
+   * Device pixel ratio
    */
   const ratio =
     Math.min(
@@ -870,39 +752,27 @@ function resizeCanvas() {
 
 
   /*
-   * Ukuran asli canvas
+   * Ukuran internal canvas
    */
   canvas.width =
-    Math.round(
-      rect.width * ratio
-    );
+    width * ratio;
 
   canvas.height =
-    Math.round(
-      rect.height * ratio
-    );
+    height * ratio;
 
 
   /*
-   * Ukuran tampilan canvas
+   * Ukuran visual
    */
   canvas.style.width =
-    rect.width + 'px';
+    width + 'px';
 
   canvas.style.height =
-    rect.height + 'px';
+    height + 'px';
 
 
   /*
-   * Ambil context lagi
-   * karena canvas baru saja di-resize.
-   */
-  ctx =
-    canvas.getContext('2d');
-
-
-  /*
-   * Gunakan koordinat CSS pixel.
+   * Reset transform
    */
   ctx.setTransform(
     ratio,
@@ -914,55 +784,85 @@ function resizeCanvas() {
   );
 
 
-  setupCanvasStyle();
+  /*
+   * Tampilan garis
+   */
+  ctx.strokeStyle =
+    '#111111';
+
+  ctx.lineWidth =
+    2.5;
+
+  ctx.lineCap =
+    'round';
+
+  ctx.lineJoin =
+    'round';
 
 
   /*
-   * Kembalikan tanda tangan lama
+   * Pastikan browser tidak
+   * mengambil alih gesture.
    */
-  if (oldImage) {
-
-    const image =
-      new Image();
-
-    image.onload = function () {
-
-      ctx.drawImage(
-        image,
-        0,
-        0,
-        rect.width,
-        rect.height
-      );
-
-    };
-
-    image.src =
-      oldImage;
-
-  }
-
-}
+  canvas.style.touchAction =
+    'none';
 
 
-/* =========================================
-   POSISI POINTER
-========================================= */
+  /*
+   * Pointer Events
+   */
+  canvas.addEventListener(
+    'pointerdown',
+    signaturePointerDown
+  );
 
-function getPointerPosition(event) {
+  canvas.addEventListener(
+    'pointermove',
+    signaturePointerMove
+  );
 
-  const rect =
-    canvas.getBoundingClientRect();
+  canvas.addEventListener(
+    'pointerup',
+    signaturePointerUp
+  );
 
-  return {
-    x:
-      event.clientX -
-      rect.left,
+  canvas.addEventListener(
+    'pointercancel',
+    signaturePointerUp
+  );
 
-    y:
-      event.clientY -
-      rect.top
-  };
+
+  /*
+   * Untuk browser lama / fallback touch
+   */
+  canvas.addEventListener(
+    'touchstart',
+    signatureTouchStart,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    'touchmove',
+    signatureTouchMove,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    'touchend',
+    signatureTouchEnd,
+    {
+      passive: false
+    }
+  );
+
+
+  console.log(
+    'Canvas tanda tangan siap.'
+  );
 
 }
 
@@ -971,37 +871,24 @@ function getPointerPosition(event) {
    POINTER DOWN
 ========================================= */
 
-function startDrawing(event) {
+function signaturePointerDown(
+  event
+) {
 
   event.preventDefault();
 
-  /*
-   * Ambil pointer secara eksklusif
-   * selama jari berada di canvas.
-   */
-  if (
-    canvas.setPointerCapture
-  ) {
 
-    try {
-
-      canvas.setPointerCapture(
-        event.pointerId
-      );
-
-    } catch (error) {
-
-      console.log(
-        'Pointer capture tidak tersedia.'
-      );
-
-    }
-
-  }
+  const rect =
+    canvas.getBoundingClientRect();
 
 
-  const position =
-    getPointerPosition(event);
+  const x =
+    event.clientX -
+    rect.left;
+
+  const y =
+    event.clientY -
+    rect.top;
 
 
   isDrawing = true;
@@ -1012,9 +899,20 @@ function startDrawing(event) {
   ctx.beginPath();
 
   ctx.moveTo(
-    position.x,
-    position.y
+    x,
+    y
   );
+
+
+  if (
+    canvas.setPointerCapture
+  ) {
+
+    canvas.setPointerCapture(
+      event.pointerId
+    );
+
+  }
 
 }
 
@@ -1023,22 +921,34 @@ function startDrawing(event) {
    POINTER MOVE
 ========================================= */
 
-function draw(event) {
+function signaturePointerMove(
+  event
+) {
 
   if (!isDrawing) {
     return;
   }
 
+
   event.preventDefault();
 
 
-  const position =
-    getPointerPosition(event);
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  const x =
+    event.clientX -
+    rect.left;
+
+  const y =
+    event.clientY -
+    rect.top;
 
 
   ctx.lineTo(
-    position.x,
-    position.y
+    x,
+    y
   );
 
   ctx.stroke();
@@ -1050,35 +960,26 @@ function draw(event) {
    POINTER UP
 ========================================= */
 
-function stopDrawing(event) {
+function signaturePointerUp(
+  event
+) {
+
+  event.preventDefault();
+
 
   if (!isDrawing) {
     return;
   }
 
 
-  if (
-    event &&
-    event.preventDefault
-  ) {
-
-    event.preventDefault();
-
-  }
-
-
   isDrawing = false;
+
 
   ctx.closePath();
 
 
-  /*
-   * Lepaskan pointer capture
-   */
   if (
-    canvas.releasePointerCapture &&
-    event &&
-    event.pointerId !== undefined
+    canvas.releasePointerCapture
   ) {
 
     try {
@@ -1087,11 +988,7 @@ function stopDrawing(event) {
         event.pointerId
       );
 
-    } catch (error) {
-
-      // Abaikan
-
-    }
+    } catch (e) {}
 
   }
 
@@ -1099,12 +996,15 @@ function stopDrawing(event) {
 
 
 /* =========================================
-   TOUCH FALLBACK
+   TOUCH START
 ========================================= */
 
-function handleTouchStart(event) {
+function signatureTouchStart(
+  event
+) {
 
   event.preventDefault();
+
 
   if (
     !event.touches ||
@@ -1118,25 +1018,44 @@ function handleTouchStart(event) {
     event.touches[0];
 
 
-  const fakeEvent = {
-
-    clientX: touch.clientX,
-
-    clientY: touch.clientY,
-
-    preventDefault: () => {}
-
-  };
+  const rect =
+    canvas.getBoundingClientRect();
 
 
-  startDrawing(fakeEvent);
+  const x =
+    touch.clientX -
+    rect.left;
+
+  const y =
+    touch.clientY -
+    rect.top;
+
+
+  isDrawing = true;
+
+  hasSignature = true;
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    x,
+    y
+  );
 
 }
 
 
-function handleTouchMove(event) {
+/* =========================================
+   TOUCH MOVE
+========================================= */
+
+function signatureTouchMove(
+  event
+) {
 
   event.preventDefault();
+
 
   if (
     !isDrawing ||
@@ -1151,38 +1070,57 @@ function handleTouchMove(event) {
     event.touches[0];
 
 
-  const fakeEvent = {
-
-    clientX: touch.clientX,
-
-    clientY: touch.clientY,
-
-    preventDefault: () => {}
-
-  };
+  const rect =
+    canvas.getBoundingClientRect();
 
 
-  draw(fakeEvent);
+  const x =
+    touch.clientX -
+    rect.left;
 
-}
+  const y =
+    touch.clientY -
+    rect.top;
 
 
-function handleTouchEnd(event) {
+  ctx.lineTo(
+    x,
+    y
+  );
 
-  event.preventDefault();
-
-  stopDrawing(event);
+  ctx.stroke();
 
 }
 
 
 /* =========================================
-   BERSIHKAN TANDA TANGAN
+   TOUCH END
+========================================= */
+
+function signatureTouchEnd(
+  event
+) {
+
+  event.preventDefault();
+
+
+  isDrawing = false;
+
+  ctx.closePath();
+
+}
+
+
+/* =========================================
+   BERSIHKAN
 ========================================= */
 
 function clearSignature() {
 
-  if (!canvas) {
+  if (
+    !canvas ||
+    !ctx
+  ) {
     return;
   }
 
@@ -1191,19 +1129,6 @@ function clearSignature() {
     canvas.getBoundingClientRect();
 
 
-  if (
-    rect.width <= 0 ||
-    rect.height <= 0
-  ) {
-    return;
-  }
-
-
-  /*
-   * Karena context menggunakan
-   * transform ratio, clearRect
-   * menggunakan ukuran CSS.
-   */
   ctx.clearRect(
     0,
     0,
