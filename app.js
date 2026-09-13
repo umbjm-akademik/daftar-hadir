@@ -45,25 +45,59 @@ async function loadActivities() {
   const loading =
     document.getElementById('loading');
 
+  const noActivity =
+    document.getElementById('noActivity');
+
   try {
 
-    const response = await fetch(API_URL, {
+    /*
+     * Batasi waktu tunggu API.
+     * Jika lebih dari 15 detik, dianggap gagal.
+     */
+    const controller =
+      new AbortController();
 
-      method: 'POST',
-
-      headers: {
-        'Content-Type':
-          'text/plain;charset=utf-8'
-      },
-
-      body: JSON.stringify({
-        action: 'getActiveActivities'
-      })
-
-    });
+    const timeout =
+      setTimeout(() => {
+        controller.abort();
+      }, 15000);
 
 
-    const data = await response.json();
+    const response =
+      await fetch(API_URL, {
+
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'text/plain;charset=utf-8'
+        },
+
+        body: JSON.stringify({
+          action: 'getActiveActivities'
+        }),
+
+        signal: controller.signal
+
+      });
+
+
+    clearTimeout(timeout);
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        'Server mengembalikan error HTTP ' +
+        response.status
+      );
+
+    }
+
+
+    const data =
+      await response.json();
+
 
     console.log(
       'Active activities:',
@@ -71,66 +105,108 @@ async function loadActivities() {
     );
 
 
-    loading.classList.add('hidden');
+    /*
+     * Pastikan response valid.
+     */
+    if (!data.success) {
 
-
-    if (
-      data.success &&
-      Array.isArray(data.activities) &&
-      data.activities.length > 0
-    ) {
-    
-      /*
-       * Hanya satu kegiatan aktif:
-       * langsung masuk ke form identitas.
-       */
-      if (data.activities.length === 1) {
-    
-        selectActivity(
-          data.activities[0]
-        );
-    
-      }
-    
-      /*
-       * Lebih dari satu kegiatan:
-       * tampilkan pilihan.
-       */
-      else {
-    
-        showActivities(
-          data.activities
-        );
-    
-      }
-    
-    }
-    else {
-    
-      document
-        .getElementById('noActivity')
-        .classList.remove('hidden');
-    
-    }
-
-    else {
-
-      document
-        .getElementById('noActivity')
-        .classList.remove('hidden');
+      throw new Error(
+        data.message ||
+        'Gagal mengambil data kegiatan'
+      );
 
     }
 
 
-  } catch (error) {
-
-    console.error(error);
-
-    loading.classList.add('hidden');
-
-    showError(
-      'Tidak dapat terhubung ke server. Silakan coba lagi.'
+    /*
+     * Hilangkan loading
+     */
+    loading.classList.add(
+      'hidden'
     );
+
+
+    /*
+     * Tidak ada kegiatan
+     */
+    if (
+      !Array.isArray(data.activities) ||
+      data.activities.length === 0
+    ) {
+
+      noActivity
+        .classList
+        .remove('hidden');
+
+      return;
+
+    }
+
+
+    /*
+     * SATU kegiatan aktif
+     *
+     * Langsung masuk ke form identitas.
+     */
+    if (
+      data.activities.length === 1
+    ) {
+
+      selectActivity(
+        data.activities[0]
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * LEBIH DARI SATU kegiatan
+     *
+     * Tampilkan pilihan.
+     */
+    showActivities(
+      data.activities
+    );
+
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'LOAD ACTIVITY ERROR:',
+      error
+    );
+
+
+    /*
+     * Pastikan spinner selalu hilang.
+     */
+    loading.classList.add(
+      'hidden'
+    );
+
+
+    /*
+     * Tampilkan pesan error
+     */
+    noActivity
+      .classList
+      .remove('hidden');
+
+
+    noActivity
+      .querySelector('h2')
+      .textContent =
+        'Tidak Dapat Memuat Data';
+
+
+    noActivity
+      .querySelector('p')
+      .textContent =
+        'Periksa koneksi internet lalu coba buka kembali.';
 
   }
 
