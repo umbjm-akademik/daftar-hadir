@@ -346,7 +346,7 @@ input:focus {
   position: relative;
 
   width: 100%;
-  height: 210px;
+  height: 220px;
 
   background: #ffffff;
 
@@ -354,6 +354,8 @@ input:focus {
   border-radius: 14px;
 
   overflow: hidden;
+
+  touch-action: none;
 }
 
 .signature-box::after {
@@ -361,8 +363,9 @@ input:focus {
 
   position: absolute;
 
-  left: 18px;
-  right: 18px;
+  left: 20px;
+  right: 20px;
+
   bottom: 42px;
 
   border-bottom: 1px dashed #d5d7db;
