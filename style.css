@@ -51,9 +51,12 @@ button {
 
 .logo {
   display: block;
-  width: 420px;
-  max-width: calc(100% - 20px);
+
+  width: 100%;
+  max-width: 420px;
+
   height: auto;
+
   margin: 0 auto 24px;
 }
 
