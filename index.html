@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0"
+  >
+
+  <meta
+    name="theme-color"
+    content="#ffffff"
+  >
+
+  <title>Daftar Hadir</title>
+
+  <link
+    rel="stylesheet"
+    href="style.css"
+  >
+</head>
+
+<body>
+
+  <main class="app">
+
+    <!-- HEADER -->
+    <header class="header">
+
+      <div class="brand">
+        UM Banjarmasin
+      </div>
+
+      <div class="title">
+        Daftar Hadir
+      </div>
+
+    </header>
+
+
+    <!-- LOADING -->
+    <section
+      id="loading"
+      class="loading"
+    >
+      <div class="spinner"></div>
+
+      <p>Memuat kegiatan...</p>
+    </section>
+
+
+    <!-- TIDAK ADA KEGIATAN -->
+    <section
+      id="noActivity"
+      class="state hidden"
+    >
+
+      <div class="state-icon">
+        —
+      </div>
+
+      <h2>
+        Belum Ada Kegiatan
+      </h2>
+
+      <p>
+        Daftar hadir saat ini belum dibuka.
+      </p>
+
+    </section>
+
+
+    <!-- PILIH KEGIATAN -->
+    <section
+      id="activitySelection"
+      class="hidden"
+    >
+
+      <h1>
+        Pilih Kegiatan
+      </h1>
+
+      <p class="subtitle">
+        Silakan pilih kegiatan yang ingin Anda ikuti.
+      </p>
+
+      <div
+        id="activityList"
+        class="activity-list"
+      ></div>
+
+    </section>
+
+
+    <!-- IDENTITAS -->
+    <section
+      id="identitySection"
+      class="hidden"
+    >
+
+      <div class="activity-info">
+
+        <span class="label">
+          Kegiatan
+        </span>
+
+        <h1 id="activityName">
+          -
+        </h1>
+
+        <p id="activityTime">
+          -
+        </p>
+
+      </div>
+
+
+      <div class="form-group">
+
+        <label for="identityInput">
+          NIM / NIDN / NUPTK / NIK
+        </label>
+
+        <input
+          id="identityInput"
+          type="text"
+          inputmode="numeric"
+          autocomplete="off"
+          placeholder="Masukkan nomor identitas"
+        >
+
+      </div>
+
+
+      <button
+        id="continueButton"
+        class="button primary"
+      >
+        Lanjut
+      </button>
+
+
+      <div
+        id="identityError"
+        class="error hidden"
+      ></div>
+
+    </section>
+
+
+    <!-- DATA PESERTA -->
+    <section
+      id="personSection"
+      class="hidden"
+    >
+
+      <div class="person-card">
+
+        <div class="person-name" id="personName">
+          -
+        </div>
+
+        <div
+          id="personDetails"
+          class="person-details"
+        ></div>
+
+      </div>
+
+
+      <!-- TANDA TANGAN -->
+      <div
+        id="signatureSection"
+        class="signature-section"
+      >
+
+        <div class="signature-header">
+
+          <label>
+            Tanda Tangan
+          </label>
+
+          <button
+            id="clearSignature"
+            type="button"
+            class="clear-button"
+          >
+            Bersihkan
+          </button>
+
+        </div>
+
+
+        <div class="signature-box">
+
+          <canvas
+            id="signatureCanvas"
+          ></canvas>
+
+        </div>
+
+      </div>
+
+
+      <button
+        id="submitButton"
+        class="button primary"
+      >
+        Kirim Kehadiran
+      </button>
+
+
+      <div
+        id="submitError"
+        class="error hidden"
+      ></div>
+
+    </section>
+
+
+    <!-- BERHASIL -->
+    <section
+      id="successSection"
+      class="state hidden"
+    >
+
+      <div class="success-icon">
+        ✓
+      </div>
+
+      <h2>
+        Kehadiran Berhasil Dicatat
+      </h2>
+
+      <div
+        id="successInfo"
+        class="success-info"
+      ></div>
+
+      <p>
+        Terima kasih.
+      </p>
+
+    </section>
+
+  </main>
+
+
+  <script src="app.js"></script>
+
+</body>
+</html>
