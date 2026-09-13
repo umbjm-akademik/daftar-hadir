@@ -488,6 +488,23 @@ input:focus {
   line-height: 1.7;
 }
 
+.success-date {
+  margin-top: 14px;
+
+  font-size: 15px;
+  font-weight: 600;
+
+  color: #17181a;
+}
+
+.success-time {
+  margin-top: 3px;
+
+  font-size: 14px;
+
+  color: #686c74;
+}
+
 /* SMALL SCREEN */
 
 @media (max-width: 360px) {
