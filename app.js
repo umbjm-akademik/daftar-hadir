@@ -788,7 +788,7 @@ function setupSignature() {
    * Tampilan garis
    */
   ctx.strokeStyle =
-    '#111111';
+    '#0057B8';
 
   ctx.lineWidth =
     2.5;
