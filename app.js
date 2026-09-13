@@ -76,34 +76,41 @@ async function loadActivities() {
 
     if (
       data.success &&
-      data.activities &&
+      Array.isArray(data.activities) &&
       data.activities.length > 0
     ) {
-
-      /**
-       * Jika hanya ada satu kegiatan,
-       * langsung pilih.
+    
+      /*
+       * Hanya satu kegiatan aktif:
+       * langsung masuk ke form identitas.
        */
       if (data.activities.length === 1) {
-
+    
         selectActivity(
           data.activities[0]
         );
-
+    
       }
-
-      /**
-       * Jika lebih dari satu,
+    
+      /*
+       * Lebih dari satu kegiatan:
        * tampilkan pilihan.
        */
       else {
-
+    
         showActivities(
           data.activities
         );
-
+    
       }
-
+    
+    }
+    else {
+    
+      document
+        .getElementById('noActivity')
+        .classList.remove('hidden');
+    
     }
 
     else {
@@ -133,131 +140,116 @@ async function loadActivities() {
 /**
  * Menampilkan daftar kegiatan.
  */
-function showActivities(
-  activities
-) {
+function showActivities(activities) {
 
   const selection =
-    document.getElementById(
-      'activitySelection'
-    );
+    document.getElementById('activitySelection');
 
   const list =
-    document.getElementById(
-      'activityList'
-    );
-
+    document.getElementById('activityList');
 
   list.innerHTML = '';
 
+  activities.forEach(activity => {
 
-  activities.forEach(
-    activity => {
+    const button =
+      document.createElement('button');
 
-      const button =
-        document.createElement(
-          'button'
-        );
+    button.type = 'button';
 
+    button.className = 'activity-card';
 
-      button.type = 'button';
+    button.innerHTML = `
+      <div class="activity-card-name">
+        ${escapeHtml(activity.name)}
+      </div>
 
-      button.className =
-        'activity-card';
+      <div class="activity-card-time">
+        ${escapeHtml(activity.start)}
+        –
+        ${escapeHtml(activity.end)}
+        WITA
+      </div>
+    `;
 
+    /*
+     * Klik kegiatan
+     */
+    button.onclick = function () {
 
-      button.innerHTML = `
+      selectActivity(activity);
 
-        <div class="activity-card-name">
-          ${escapeHtml(activity.name)}
-        </div>
+    };
 
-        <div class="activity-card-time">
-          ${activity.start}
-          –
-          ${activity.end}
-          WITA
-        </div>
+    list.appendChild(button);
 
-      `;
+  });
 
-
-      button.addEventListener(
-        'click',
-        () => selectActivity(activity)
-      );
-
-
-      list.appendChild(button);
-
-    }
-  );
-
-
-  selection.classList.remove(
-    'hidden'
-  );
+  selection.classList.remove('hidden');
 
 }
 
 
-/**
- * Memilih kegiatan.
- */
-function selectActivity(
-  activity
-) {
+function selectActivity(activity) {
 
-  selectedActivity =
-    activity;
+  console.log(
+    'KEGIATAN DIPILIH:',
+    activity
+  );
 
+  selectedActivity = activity;
 
+  /*
+   * Sembunyikan pilihan kegiatan
+   */
   document
-    .getElementById(
-      'activitySelection'
-    )
-    .classList.add(
-      'hidden'
-    );
+    .getElementById('activitySelection')
+    .classList.add('hidden');
 
 
+  /*
+   * Tampilkan form identitas
+   */
   document
-    .getElementById(
-      'identitySection'
-    )
-    .classList.remove(
-      'hidden'
-    );
+    .getElementById('identitySection')
+    .classList.remove('hidden');
 
 
+  /*
+   * Isi nama kegiatan
+   */
   document
-    .getElementById(
-      'activityName'
-    )
+    .getElementById('activityName')
     .textContent =
       activity.name;
 
 
+  /*
+   * Isi waktu kegiatan
+   */
   document
-    .getElementById(
-      'activityTime'
-    )
+    .getElementById('activityTime')
     .textContent =
       `Presensi dibuka ${activity.start}–${activity.end} WITA`;
 
 
-  setTimeout(
-    () => {
+  /*
+   * Kosongkan input identitas
+   */
+  const identityInput =
+    document.getElementById('identityInput');
 
-      document
-        .getElementById(
-          'identityInput'
-        )
-        .focus();
+  identityInput.value = '';
 
-    },
-    100
-  );
+
+  /*
+   * Fokus ke input
+   */
+  setTimeout(() => {
+
+    identityInput.focus();
+
+  }, 150);
 
 }
 
