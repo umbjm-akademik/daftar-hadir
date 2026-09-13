@@ -365,7 +365,6 @@ input:focus {
 
   left: 20px;
   right: 20px;
-
   bottom: 42px;
 
   border-bottom: 1px dashed #d5d7db;
@@ -379,7 +378,14 @@ input:focus {
   width: 100%;
   height: 100%;
 
+  margin: 0;
+  padding: 0;
+
+  background: transparent;
+
   touch-action: none;
+
+  pointer-events: auto;
 
   cursor: crosshair;
 }
