@@ -676,8 +676,23 @@ function showPerson(
 
   clearSignature();
 
-}
+  requestAnimationFrame(() => {
+  
+    resizeCanvas();
+  
+    /*
+     * Resize sekali lagi setelah browser
+     * benar-benar menyelesaikan layout.
+     */
+    setTimeout(() => {
+  
+      resizeCanvas();
+  
+    }, 100);
+  
+  });
 
+}
 
 /* =========================================
    CANVAS TANDA TANGAN
@@ -685,88 +700,116 @@ function showPerson(
 
 function setupSignature() {
 
-  canvas =
-    document.getElementById(
-      'signatureCanvas'
-    );
-
+  canvas = document.getElementById(
+    'signatureCanvas'
+  );
 
   if (!canvas) {
+    console.error('Canvas tanda tangan tidak ditemukan.');
     return;
   }
 
+  ctx = canvas.getContext('2d');
 
-  ctx =
-    canvas.getContext(
-      '2d'
-    );
+  /*
+   * Konfigurasi tampilan garis
+   */
+  setupCanvasStyle();
 
-
+  /*
+   * Ukuran awal.
+   * Jika masih hidden, fungsi akan dilewati.
+   */
   resizeCanvas();
 
-
+  /*
+   * Resize ketika ukuran layar berubah
+   */
   window.addEventListener(
     'resize',
-    () => {
-
-      resizeCanvas();
-
-    }
+    resizeCanvas
   );
 
 
   /*
-   * Mouse
+   * ==========================
+   * POINTER EVENTS
+   * ==========================
    */
 
   canvas.addEventListener(
-    'mousedown',
-    startDrawing
+    'pointerdown',
+    startDrawing,
+    { passive: false }
   );
 
   canvas.addEventListener(
-    'mousemove',
-    draw
+    'pointermove',
+    draw,
+    { passive: false }
   );
 
   canvas.addEventListener(
-    'mouseup',
-    stopDrawing
+    'pointerup',
+    stopDrawing,
+    { passive: false }
   );
 
   canvas.addEventListener(
-    'mouseleave',
-    stopDrawing
+    'pointercancel',
+    stopDrawing,
+    { passive: false }
   );
 
 
   /*
-   * Touch
+   * ==========================
+   * TOUCH FALLBACK
+   * ==========================
+   *
+   * Untuk browser yang tidak
+   * menangani Pointer Events
+   * dengan baik.
    */
 
   canvas.addEventListener(
     'touchstart',
-    startDrawing,
-    {
-      passive: false
-    }
+    handleTouchStart,
+    { passive: false }
   );
 
   canvas.addEventListener(
     'touchmove',
-    draw,
-    {
-      passive: false
-    }
+    handleTouchMove,
+    { passive: false }
   );
 
   canvas.addEventListener(
     'touchend',
-    stopDrawing,
-    {
-      passive: false
-    }
+    handleTouchEnd,
+    { passive: false }
   );
+
+}
+
+
+/* =========================================
+   STYLE CANVAS
+========================================= */
+
+function setupCanvasStyle() {
+
+  if (!ctx) {
+    return;
+  }
+
+  ctx.lineWidth = 2.5;
+
+  ctx.lineCap = 'round';
+
+  ctx.lineJoin = 'round';
+
+  ctx.strokeStyle = '#17181a';
 
 }
 
@@ -781,16 +824,24 @@ function resizeCanvas() {
     return;
   }
 
-
   const rect =
     canvas.getBoundingClientRect();
 
+  /*
+   * Canvas belum terlihat.
+   */
+  if (
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    return;
+  }
+
 
   /*
-   * Simpan tanda tangan lama
-   * jika ada.
+   * Simpan gambar lama
+   * apabila ada tanda tangan.
    */
-
   let oldImage = null;
 
   if (
@@ -800,26 +851,31 @@ function resizeCanvas() {
   ) {
 
     oldImage =
-      canvas.toDataURL(
-        'image/png'
-      );
+      canvas.toDataURL('image/png');
 
   }
 
 
+  /*
+   * Device Pixel Ratio
+   *
+   * Maksimal 2 agar ukuran file
+   * tidak terlalu besar.
+   */
   const ratio =
     Math.min(
-      window.devicePixelRatio ||
-      1,
+      window.devicePixelRatio || 1,
       2
     );
 
 
+  /*
+   * Ukuran asli canvas
+   */
   canvas.width =
     Math.round(
       rect.width * ratio
     );
-
 
   canvas.height =
     Math.round(
@@ -827,48 +883,59 @@ function resizeCanvas() {
     );
 
 
+  /*
+   * Ukuran tampilan canvas
+   */
+  canvas.style.width =
+    rect.width + 'px';
+
+  canvas.style.height =
+    rect.height + 'px';
+
+
+  /*
+   * Ambil context lagi
+   * karena canvas baru saja di-resize.
+   */
   ctx =
-    canvas.getContext(
-      '2d'
-    );
+    canvas.getContext('2d');
 
 
-  ctx.scale(
+  /*
+   * Gunakan koordinat CSS pixel.
+   */
+  ctx.setTransform(
     ratio,
-    ratio
+    0,
+    0,
+    ratio,
+    0,
+    0
   );
 
 
-  ctx.lineWidth =
-    2.2;
-
-  ctx.lineCap =
-    'round';
-
-  ctx.lineJoin =
-    'round';
-
-  ctx.strokeStyle =
-    '#17181a';
+  setupCanvasStyle();
 
 
+  /*
+   * Kembalikan tanda tangan lama
+   */
   if (oldImage) {
 
     const image =
       new Image();
 
-    image.onload =
-      () => {
+    image.onload = function () {
 
-        ctx.drawImage(
-          image,
-          0,
-          0,
-          rect.width,
-          rect.height
-        );
+      ctx.drawImage(
+        image,
+        0,
+        0,
+        rect.width,
+        rect.height
+      );
 
-      };
+    };
 
     image.src =
       oldImage;
@@ -882,79 +949,64 @@ function resizeCanvas() {
    POSISI POINTER
 ========================================= */
 
-function getPointerPosition(
-  event
-) {
+function getPointerPosition(event) {
 
   const rect =
     canvas.getBoundingClientRect();
 
-
-  let clientX;
-  let clientY;
-
-
-  if (
-    event.touches &&
-    event.touches.length > 0
-  ) {
-
-    clientX =
-      event.touches[0].clientX;
-
-    clientY =
-      event.touches[0].clientY;
-
-  }
-
-  else {
-
-    clientX =
-      event.clientX;
-
-    clientY =
-      event.clientY;
-
-  }
-
-
   return {
-
     x:
-      clientX -
+      event.clientX -
       rect.left,
 
     y:
-      clientY -
+      event.clientY -
       rect.top
-
   };
 
 }
 
 
 /* =========================================
-   MULAI MENGGAMBAR
+   POINTER DOWN
 ========================================= */
 
-function startDrawing(
-  event
-) {
+function startDrawing(event) {
 
   event.preventDefault();
 
+  /*
+   * Ambil pointer secara eksklusif
+   * selama jari berada di canvas.
+   */
+  if (
+    canvas.setPointerCapture
+  ) {
+
+    try {
+
+      canvas.setPointerCapture(
+        event.pointerId
+      );
+
+    } catch (error) {
+
+      console.log(
+        'Pointer capture tidak tersedia.'
+      );
+
+    }
+
+  }
+
 
   const position =
-    getPointerPosition(
-      event
-    );
+    getPointerPosition(event);
 
 
-  isDrawing =
-    true;
+  isDrawing = true;
 
-  hasSignature =
-    true;
+  hasSignature = true;
 
 
   ctx.beginPath();
@@ -968,25 +1020,20 @@ function startDrawing(
 
 
 /* =========================================
-   MENGGAMBAR
+   POINTER MOVE
 ========================================= */
 
-function draw(
-  event
-) {
+function draw(event) {
 
   if (!isDrawing) {
     return;
   }
 
-
   event.preventDefault();
 
 
   const position =
-    getPointerPosition(
-      event
-    );
+    getPointerPosition(event);
 
 
   ctx.lineTo(
@@ -994,19 +1041,16 @@ function draw(
     position.y
   );
 
-
   ctx.stroke();
 
 }
 
 
 /* =========================================
-   SELESAI MENGGAMBAR
+   POINTER UP
 ========================================= */
 
-function stopDrawing(
-  event
-) {
+function stopDrawing(event) {
 
   if (!isDrawing) {
     return;
@@ -1023,11 +1067,111 @@ function stopDrawing(
   }
 
 
-  isDrawing =
-    false;
-
+  isDrawing = false;
 
   ctx.closePath();
+
+
+  /*
+   * Lepaskan pointer capture
+   */
+  if (
+    canvas.releasePointerCapture &&
+    event &&
+    event.pointerId !== undefined
+  ) {
+
+    try {
+
+      canvas.releasePointerCapture(
+        event.pointerId
+      );
+
+    } catch (error) {
+
+      // Abaikan
+
+    }
+
+  }
+
+}
+
+
+/* =========================================
+   TOUCH FALLBACK
+========================================= */
+
+function handleTouchStart(event) {
+
+  event.preventDefault();
+
+  if (
+    !event.touches ||
+    event.touches.length === 0
+  ) {
+    return;
+  }
+
+
+  const touch =
+    event.touches[0];
+
+
+  const fakeEvent = {
+
+    clientX: touch.clientX,
+
+    clientY: touch.clientY,
+
+    preventDefault: () => {}
+
+  };
+
+
+  startDrawing(fakeEvent);
+
+}
+
+
+function handleTouchMove(event) {
+
+  event.preventDefault();
+
+  if (
+    !isDrawing ||
+    !event.touches ||
+    event.touches.length === 0
+  ) {
+    return;
+  }
+
+
+  const touch =
+    event.touches[0];
+
+
+  const fakeEvent = {
+
+    clientX: touch.clientX,
+
+    clientY: touch.clientY,
+
+    preventDefault: () => {}
+
+  };
+
+
+  draw(fakeEvent);
+
+}
+
+
+function handleTouchEnd(event) {
+
+  event.preventDefault();
+
+  stopDrawing(event);
 
 }
 
@@ -1038,7 +1182,7 @@ function stopDrawing(
 
 function clearSignature() {
 
-  if (!canvas || !ctx) {
+  if (!canvas) {
     return;
   }
 
@@ -1047,6 +1191,19 @@ function clearSignature() {
     canvas.getBoundingClientRect();
 
 
+  if (
+    rect.width <= 0 ||
+    rect.height <= 0
+  ) {
+    return;
+  }
+
+
+  /*
+   * Karena context menggunakan
+   * transform ratio, clearRect
+   * menggunakan ukuran CSS.
+   */
   ctx.clearRect(
     0,
     0,
@@ -1055,234 +1212,7 @@ function clearSignature() {
   );
 
 
-  hasSignature =
-    false;
-
-}
-
-
-/* =========================================
-   KIRIM PRESENSI
-========================================= */
-
-async function submitAttendance() {
-
-  const button =
-    document.getElementById(
-      'submitButton'
-    );
-
-
-  hideError(
-    'submitError'
-  );
-
-
-  if (!selectedActivity) {
-
-    showSubmitError(
-      'Kegiatan belum dipilih.'
-    );
-
-    return;
-
-  }
-
-
-  if (!currentPerson) {
-
-    showSubmitError(
-      'Data peserta belum ditemukan.'
-    );
-
-    return;
-
-  }
-
-
-  if (!hasSignature) {
-
-    showSubmitError(
-      'Silakan tanda tangan terlebih dahulu.'
-    );
-
-    return;
-
-  }
-
-
-  button.disabled =
-    true;
-
-  button.textContent =
-    'Mengirim...';
-
-
-  try {
-
-    /*
-     * Kompres tanda tangan.
-     */
-
-    const signature =
-      canvas.toDataURL(
-        'image/jpeg',
-        0.65
-      );
-
-
-    const response =
-      await fetch(
-        API_URL,
-        {
-
-          method: 'POST',
-
-          headers: {
-            'Content-Type':
-              'text/plain;charset=utf-8'
-          },
-
-          body: JSON.stringify({
-
-            action:
-              'submitAttendance',
-
-            activityId:
-              selectedActivity.id,
-
-            identitas:
-              currentPerson.identitas,
-
-            signature:
-              signature
-
-          })
-
-        }
-      );
-
-
-    const data =
-      await response.json();
-
-
-    console.log(
-      'Submit:',
-      data
-    );
-
-
-    if (data.success) {
-
-      showSuccess(
-        data
-      );
-
-      return;
-
-    }
-
-
-    if (
-      data.duplicate
-    ) {
-
-      showSubmitError(
-        'Anda sudah melakukan presensi pada kegiatan ini.'
-      );
-
-    }
-
-    else {
-
-      showSubmitError(
-        data.message ||
-        'Presensi gagal dikirim.'
-      );
-
-    }
-
-
-  }
-
-  catch (error) {
-
-    console.error(
-      error
-    );
-
-
-    showSubmitError(
-      'Terjadi kesalahan koneksi. Silakan coba lagi.'
-    );
-
-  }
-
-
-  finally {
-
-    button.disabled =
-      false;
-
-    button.textContent =
-      'Kirim Kehadiran';
-
-  }
-
-}
-
-
-/* =========================================
-   BERHASIL
-========================================= */
-
-function showSuccess(
-  data
-) {
-
-  document
-    .getElementById(
-      'personSection'
-    )
-    .classList
-    .add('hidden');
-
-
-  document
-    .getElementById(
-      'successSection'
-    )
-    .classList
-    .remove('hidden');
-
-
-  document
-    .getElementById(
-      'successInfo'
-    )
-    .innerHTML = `
-
-      <strong>
-        ${escapeHtml(
-          data.nama
-        )}
-      </strong>
-
-      <br>
-
-      ${escapeHtml(
-        data.activity
-      )}
-
-      <br>
-
-      ${escapeHtml(
-        data.timestamp
-      )}
-      WITA
-
-    `;
+  hasSignature = false;
 
 }
 
