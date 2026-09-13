@@ -46,20 +46,19 @@ button {
 
 .header {
   margin-bottom: 42px;
+  text-align: center;
 }
 
-.brand {
-  font-size: 13px;
-  font-weight: 700;
-
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-
-  color: #666b73;
+.logo {
+  display: block;
+  width: 300px;
+  max-width: calc(100vw - 40px);
+  height: auto;
+  margin: 0 auto 24px;
 }
 
 .title {
-  margin-top: 5px;
+  margin-top: 0;
 
   font-size: 28px;
   font-weight: 750;
@@ -456,14 +455,6 @@ input:focus {
 
   font-size: 14px;
   line-height: 1.7;
-}
-
-.logo {
-  display: block;
-  width: 260px;
-  max-width: 80%;
-  height: auto;
-  margin-bottom: 22px;
 }
 
 /* SMALL SCREEN */
