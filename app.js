@@ -1381,7 +1381,7 @@ async function submitAttendance() {
 function showSuccess(data) {
 
   /*
-   * Sembunyikan form tanda tangan.
+   * Sembunyikan form tanda tangan
    */
   document
     .getElementById(
@@ -1392,7 +1392,7 @@ function showSuccess(data) {
 
 
   /*
-   * Tampilkan halaman sukses.
+   * Tampilkan halaman sukses
    */
   const successSection =
     document.getElementById(
@@ -1405,7 +1405,77 @@ function showSuccess(data) {
 
 
   /*
-   * Tampilkan informasi presensi.
+   * Format tanggal dan waktu
+   *
+   * Timestamp dari server:
+   * 2026-09-13 23:47:19
+   */
+  let formattedDate = '';
+  let formattedTime = '';
+
+
+  if (data.timestamp) {
+
+    const parts =
+      data.timestamp.split(' ');
+
+
+    const datePart =
+      parts[0] || '';
+
+    const timePart =
+      parts[1] || '';
+
+
+    /*
+     * 2026-09-13
+     * menjadi
+     * 13 September 2026
+     */
+    if (
+      /^\d{4}-\d{2}-\d{2}$/.test(
+        datePart
+      )
+    ) {
+
+      const date =
+        new Date(
+          datePart + 'T00:00:00'
+        );
+
+
+      const months = [
+        'Januari',
+        'Februari',
+        'Maret',
+        'April',
+        'Mei',
+        'Juni',
+        'Juli',
+        'Agustus',
+        'September',
+        'Oktober',
+        'November',
+        'Desember'
+      ];
+
+
+      formattedDate =
+        `${date.getDate()} ` +
+        `${months[date.getMonth()]} ` +
+        `${date.getFullYear()}`;
+
+    }
+
+
+    formattedTime =
+      timePart + ' WITA';
+
+  }
+
+
+  /*
+   * Tampilkan informasi
    */
   const successInfo =
     document.getElementById(
@@ -1417,7 +1487,8 @@ function showSuccess(data) {
 
     <strong>
       ${escapeHtml(
-        data.nama || currentPerson.nama
+        data.nama ||
+        currentPerson.nama
       )}
     </strong>
 
@@ -1428,12 +1499,17 @@ function showSuccess(data) {
       selectedActivity.name
     )}
 
-    <br>
+    <div class="success-date">
+      ${escapeHtml(
+        formattedDate
+      )}
+    </div>
 
-    ${escapeHtml(
-      data.timestamp || ''
-    )}
-    ${data.timestamp ? ' WITA' : ''}
+    <div class="success-time">
+      ${escapeHtml(
+        formattedTime
+      )}
+    </div>
 
   `;
 
