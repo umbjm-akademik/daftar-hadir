@@ -1,15 +1,45 @@
-const API_URL = 'https://script.google.com/macros/s/AKfycbyNOS_an60Wt_Ozyfb0mGHlH3kJj9cjPYEdPZTIuLZguXFtxRURdDi_FllR3yNTsPR5/exec';
+const API_URL =
+  'https://script.google.com/macros/s/AKfycbyNOS_an60Wt_Ozyfb0mGHlH3kJj9cjPYEdPZTIuLZguXFtxRURdDi_FllR3yNTsPR5/exec';
+
 
 let selectedActivity = null;
 let currentPerson = null;
 
+let canvas = null;
+let ctx = null;
 
-document.addEventListener('DOMContentLoaded', () => {
+let isDrawing = false;
+let hasSignature = false;
 
-  loadActivities();
+
+/* =========================================
+   START
+========================================= */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  () => {
+
+    loadActivities();
+
+    setupEvents();
+
+    setupSignature();
+
+  }
+);
+
+
+/* =========================================
+   EVENT
+========================================= */
+
+function setupEvents() {
 
   const continueButton =
-    document.getElementById('continueButton');
+    document.getElementById(
+      'continueButton'
+    );
 
   continueButton.addEventListener(
     'click',
@@ -18,68 +48,99 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
   const identityInput =
-    document.getElementById('identityInput');
+    document.getElementById(
+      'identityInput'
+    );
 
   identityInput.addEventListener(
     'keydown',
     event => {
 
       if (event.key === 'Enter') {
+
         findPerson();
+
       }
 
     }
   );
 
-});
+
+  const clearButton =
+    document.getElementById(
+      'clearSignature'
+    );
+
+  clearButton.addEventListener(
+    'click',
+    clearSignature
+  );
 
 
-/**
- * ============================
- * KEGIATAN
- * ============================
- */
+  const submitButton =
+    document.getElementById(
+      'submitButton'
+    );
+
+  submitButton.addEventListener(
+    'click',
+    submitAttendance
+  );
+
+}
+
+
+/* =========================================
+   LOAD KEGIATAN
+========================================= */
 
 async function loadActivities() {
 
   const loading =
-    document.getElementById('loading');
+    document.getElementById(
+      'loading'
+    );
 
   const noActivity =
-    document.getElementById('noActivity');
+    document.getElementById(
+      'noActivity'
+    );
+
 
   try {
 
-    /*
-     * Batasi waktu tunggu API.
-     * Jika lebih dari 15 detik, dianggap gagal.
-     */
     const controller =
       new AbortController();
 
     const timeout =
-      setTimeout(() => {
-        controller.abort();
-      }, 15000);
+      setTimeout(
+        () => controller.abort(),
+        15000
+      );
 
 
     const response =
-      await fetch(API_URL, {
+      await fetch(
+        API_URL,
+        {
 
-        method: 'POST',
+          method: 'POST',
 
-        headers: {
-          'Content-Type':
-            'text/plain;charset=utf-8'
-        },
+          headers: {
+            'Content-Type':
+              'text/plain;charset=utf-8'
+          },
 
-        body: JSON.stringify({
-          action: 'getActiveActivities'
-        }),
+          body: JSON.stringify({
+            action:
+              'getActiveActivities'
+          }),
 
-        signal: controller.signal
+          signal:
+            controller.signal
 
-      });
+        }
+      );
 
 
     clearTimeout(timeout);
@@ -88,7 +149,7 @@ async function loadActivities() {
     if (!response.ok) {
 
       throw new Error(
-        'Server mengembalikan error HTTP ' +
+        'HTTP ' +
         response.status
       );
 
@@ -105,38 +166,22 @@ async function loadActivities() {
     );
 
 
-    /*
-     * Pastikan response valid.
-     */
-    if (!data.success) {
-
-      throw new Error(
-        data.message ||
-        'Gagal mengambil data kegiatan'
-      );
-
-    }
-
-
-    /*
-     * Hilangkan loading
-     */
     loading.classList.add(
       'hidden'
     );
 
 
-    /*
-     * Tidak ada kegiatan
-     */
     if (
-      !Array.isArray(data.activities) ||
+      !data.success ||
+      !Array.isArray(
+        data.activities
+      ) ||
       data.activities.length === 0
     ) {
 
-      noActivity
-        .classList
-        .remove('hidden');
+      noActivity.classList.remove(
+        'hidden'
+      );
 
       return;
 
@@ -144,10 +189,10 @@ async function loadActivities() {
 
 
     /*
-     * SATU kegiatan aktif
-     *
-     * Langsung masuk ke form identitas.
+     * Satu kegiatan:
+     * langsung masuk.
      */
+
     if (
       data.activities.length === 1
     ) {
@@ -162,10 +207,10 @@ async function loadActivities() {
 
 
     /*
-     * LEBIH DARI SATU kegiatan
-     *
-     * Tampilkan pilihan.
+     * Banyak kegiatan:
+     * tampilkan pilihan.
      */
+
     showActivities(
       data.activities
     );
@@ -176,22 +221,15 @@ async function loadActivities() {
   catch (error) {
 
     console.error(
-      'LOAD ACTIVITY ERROR:',
       error
     );
 
 
-    /*
-     * Pastikan spinner selalu hilang.
-     */
     loading.classList.add(
       'hidden'
     );
 
 
-    /*
-     * Tampilkan pesan error
-     */
     noActivity
       .classList
       .remove('hidden');
@@ -206,141 +244,162 @@ async function loadActivities() {
     noActivity
       .querySelector('p')
       .textContent =
-        'Periksa koneksi internet lalu coba buka kembali.';
+        'Periksa koneksi internet lalu coba lagi.';
 
   }
 
 }
 
 
-/**
- * Menampilkan daftar kegiatan.
- */
-function showActivities(activities) {
+/* =========================================
+   TAMPILKAN KEGIATAN
+========================================= */
+
+function showActivities(
+  activities
+) {
 
   const selection =
-    document.getElementById('activitySelection');
+    document.getElementById(
+      'activitySelection'
+    );
 
   const list =
-    document.getElementById('activityList');
+    document.getElementById(
+      'activityList'
+    );
+
 
   list.innerHTML = '';
 
-  activities.forEach(activity => {
 
-    const button =
-      document.createElement('button');
+  activities.forEach(
+    activity => {
 
-    button.type = 'button';
+      const button =
+        document.createElement(
+          'button'
+        );
 
-    button.className = 'activity-card';
 
-    button.innerHTML = `
-      <div class="activity-card-name">
-        ${escapeHtml(activity.name)}
-      </div>
+      button.type =
+        'button';
 
-      <div class="activity-card-time">
-        ${escapeHtml(activity.start)}
-        –
-        ${escapeHtml(activity.end)}
-        WITA
-      </div>
-    `;
+      button.className =
+        'activity-card';
 
-    /*
-     * Klik kegiatan
-     */
-    button.onclick = function () {
 
-      selectActivity(activity);
+      button.innerHTML = `
 
-    };
+        <div class="activity-card-name">
+          ${escapeHtml(
+            activity.name
+          )}
+        </div>
 
-    list.appendChild(button);
+        <div class="activity-card-time">
+          ${escapeHtml(
+            activity.start
+          )}
+          –
+          ${escapeHtml(
+            activity.end
+          )}
+          WITA
+        </div>
 
-  });
+      `;
 
-  selection.classList.remove('hidden');
+
+      button.onclick =
+        () => selectActivity(
+          activity
+        );
+
+
+      list.appendChild(
+        button
+      );
+
+    }
+  );
+
+
+  selection
+    .classList
+    .remove('hidden');
 
 }
 
 
-function selectActivity(activity) {
+/* =========================================
+   PILIH KEGIATAN
+========================================= */
 
-  console.log(
-    'KEGIATAN DIPILIH:',
-    activity
-  );
+function selectActivity(
+  activity
+) {
 
   selectedActivity =
     activity;
 
 
-  /*
-   * Sembunyikan pilihan kegiatan
-   */
   document
-    .getElementById('activitySelection')
+    .getElementById(
+      'activitySelection'
+    )
     .classList
     .add('hidden');
 
 
-  /*
-   * Tampilkan form identitas
-   */
   document
-    .getElementById('identitySection')
+    .getElementById(
+      'identitySection'
+    )
     .classList
     .remove('hidden');
 
 
-  /*
-   * Nama kegiatan
-   */
   document
-    .getElementById('activityName')
+    .getElementById(
+      'activityName'
+    )
     .textContent =
       activity.name;
 
 
-  /*
-   * Waktu kegiatan
-   */
   document
-    .getElementById('activityTime')
+    .getElementById(
+      'activityTime'
+    )
     .textContent =
       `Presensi dibuka ${activity.start}–${activity.end} WITA`;
 
 
-  /*
-   * Bersihkan input
-   */
   const identityInput =
     document.getElementById(
       'identityInput'
     );
 
+
   identityInput.value = '';
 
 
-  /*
-   * Fokus otomatis ke input
-   */
-  setTimeout(() => {
+  setTimeout(
+    () => {
 
-    identityInput.focus();
+      identityInput.focus();
 
-  }, 150);
+    },
+    150
+  );
 
 }
 
 
-/**
- * ============================
- * IDENTITAS
- * ============================
- */
+/* =========================================
+   CARI IDENTITAS
+========================================= */
 
 async function findPerson() {
 
@@ -354,18 +413,13 @@ async function findPerson() {
       'continueButton'
     );
 
-  const error =
-    document.getElementById(
-      'identityError'
-    );
-
 
   const identitas =
     input.value.trim();
 
 
-  error.classList.add(
-    'hidden'
+  hideError(
+    'identityError'
   );
 
 
@@ -378,13 +432,13 @@ async function findPerson() {
     input.focus();
 
     return;
+
   }
 
 
-  /**
-   * Hanya angka.
-   */
-  if (!/^\d+$/.test(identitas)) {
+  if (!/^\d+$/.test(
+    identitas
+  )) {
 
     showIdentityError(
       'Nomor identitas hanya boleh berisi angka.'
@@ -393,10 +447,12 @@ async function findPerson() {
     input.focus();
 
     return;
+
   }
 
 
-  button.disabled = true;
+  button.disabled =
+    true;
 
   button.textContent =
     'Mencari...';
@@ -418,9 +474,11 @@ async function findPerson() {
 
           body: JSON.stringify({
 
-            action: 'getPerson',
+            action:
+              'getPerson',
 
-            identitas: identitas
+            identitas:
+              identitas
 
           })
 
@@ -451,6 +509,7 @@ async function findPerson() {
         data.person
       );
 
+
     }
 
     else {
@@ -467,7 +526,10 @@ async function findPerson() {
 
   catch (error) {
 
-    console.error(error);
+    console.error(
+      error
+    );
+
 
     showIdentityError(
       'Terjadi kesalahan koneksi. Silakan coba lagi.'
@@ -478,7 +540,8 @@ async function findPerson() {
 
   finally {
 
-    button.disabled = false;
+    button.disabled =
+      false;
 
     button.textContent =
       'Lanjut';
@@ -488,9 +551,10 @@ async function findPerson() {
 }
 
 
-/**
- * Menampilkan data peserta.
- */
+/* =========================================
+   TAMPILKAN DATA PESERTA
+========================================= */
+
 function showPerson(
   person
 ) {
@@ -499,18 +563,16 @@ function showPerson(
     .getElementById(
       'identitySection'
     )
-    .classList.add(
-      'hidden'
-    );
+    .classList
+    .add('hidden');
 
 
   document
     .getElementById(
       'personSection'
     )
-    .classList.remove(
-      'hidden'
-    );
+    .classList
+    .remove('hidden');
 
 
   document
@@ -535,14 +597,14 @@ function showPerson(
     'Mahasiswa'
   ) {
 
-    html = `
-      ${escapeHtml(
+    html =
+      escapeHtml(
         person.programStudi ||
         ''
-      )}
-    `;
+      );
 
   }
+
 
   else if (
     person.jenis ===
@@ -567,6 +629,7 @@ function showPerson(
 
   }
 
+
   else if (
     person.jenis ===
     'Tendik'
@@ -590,14 +653,14 @@ function showPerson(
 
   }
 
+
   else {
 
-    html = `
-      ${escapeHtml(
+    html =
+      escapeHtml(
         person.jenis ||
         ''
-      )}
-    `;
+      );
 
   }
 
@@ -605,14 +668,628 @@ function showPerson(
   details.innerHTML =
     html;
 
+
+  /*
+   * Bersihkan tanda tangan
+   * setiap kali peserta baru ditemukan.
+   */
+
+  clearSignature();
+
 }
 
 
-/**
- * ============================
- * ERROR
- * ============================
- */
+/* =========================================
+   CANVAS TANDA TANGAN
+========================================= */
+
+function setupSignature() {
+
+  canvas =
+    document.getElementById(
+      'signatureCanvas'
+    );
+
+
+  if (!canvas) {
+    return;
+  }
+
+
+  ctx =
+    canvas.getContext(
+      '2d'
+    );
+
+
+  resizeCanvas();
+
+
+  window.addEventListener(
+    'resize',
+    () => {
+
+      resizeCanvas();
+
+    }
+  );
+
+
+  /*
+   * Mouse
+   */
+
+  canvas.addEventListener(
+    'mousedown',
+    startDrawing
+  );
+
+  canvas.addEventListener(
+    'mousemove',
+    draw
+  );
+
+  canvas.addEventListener(
+    'mouseup',
+    stopDrawing
+  );
+
+  canvas.addEventListener(
+    'mouseleave',
+    stopDrawing
+  );
+
+
+  /*
+   * Touch
+   */
+
+  canvas.addEventListener(
+    'touchstart',
+    startDrawing,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    'touchmove',
+    draw,
+    {
+      passive: false
+    }
+  );
+
+  canvas.addEventListener(
+    'touchend',
+    stopDrawing,
+    {
+      passive: false
+    }
+  );
+
+}
+
+
+/* =========================================
+   RESIZE CANVAS
+========================================= */
+
+function resizeCanvas() {
+
+  if (!canvas) {
+    return;
+  }
+
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  /*
+   * Simpan tanda tangan lama
+   * jika ada.
+   */
+
+  let oldImage = null;
+
+  if (
+    hasSignature &&
+    canvas.width > 0 &&
+    canvas.height > 0
+  ) {
+
+    oldImage =
+      canvas.toDataURL(
+        'image/png'
+      );
+
+  }
+
+
+  const ratio =
+    Math.min(
+      window.devicePixelRatio ||
+      1,
+      2
+    );
+
+
+  canvas.width =
+    Math.round(
+      rect.width * ratio
+    );
+
+
+  canvas.height =
+    Math.round(
+      rect.height * ratio
+    );
+
+
+  ctx =
+    canvas.getContext(
+      '2d'
+    );
+
+
+  ctx.scale(
+    ratio,
+    ratio
+  );
+
+
+  ctx.lineWidth =
+    2.2;
+
+  ctx.lineCap =
+    'round';
+
+  ctx.lineJoin =
+    'round';
+
+  ctx.strokeStyle =
+    '#17181a';
+
+
+  if (oldImage) {
+
+    const image =
+      new Image();
+
+    image.onload =
+      () => {
+
+        ctx.drawImage(
+          image,
+          0,
+          0,
+          rect.width,
+          rect.height
+        );
+
+      };
+
+    image.src =
+      oldImage;
+
+  }
+
+}
+
+
+/* =========================================
+   POSISI POINTER
+========================================= */
+
+function getPointerPosition(
+  event
+) {
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  let clientX;
+  let clientY;
+
+
+  if (
+    event.touches &&
+    event.touches.length > 0
+  ) {
+
+    clientX =
+      event.touches[0].clientX;
+
+    clientY =
+      event.touches[0].clientY;
+
+  }
+
+  else {
+
+    clientX =
+      event.clientX;
+
+    clientY =
+      event.clientY;
+
+  }
+
+
+  return {
+
+    x:
+      clientX -
+      rect.left,
+
+    y:
+      clientY -
+      rect.top
+
+  };
+
+}
+
+
+/* =========================================
+   MULAI MENGGAMBAR
+========================================= */
+
+function startDrawing(
+  event
+) {
+
+  event.preventDefault();
+
+
+  const position =
+    getPointerPosition(
+      event
+    );
+
+
+  isDrawing =
+    true;
+
+  hasSignature =
+    true;
+
+
+  ctx.beginPath();
+
+  ctx.moveTo(
+    position.x,
+    position.y
+  );
+
+}
+
+
+/* =========================================
+   MENGGAMBAR
+========================================= */
+
+function draw(
+  event
+) {
+
+  if (!isDrawing) {
+    return;
+  }
+
+
+  event.preventDefault();
+
+
+  const position =
+    getPointerPosition(
+      event
+    );
+
+
+  ctx.lineTo(
+    position.x,
+    position.y
+  );
+
+
+  ctx.stroke();
+
+}
+
+
+/* =========================================
+   SELESAI MENGGAMBAR
+========================================= */
+
+function stopDrawing(
+  event
+) {
+
+  if (!isDrawing) {
+    return;
+  }
+
+
+  if (
+    event &&
+    event.preventDefault
+  ) {
+
+    event.preventDefault();
+
+  }
+
+
+  isDrawing =
+    false;
+
+
+  ctx.closePath();
+
+}
+
+
+/* =========================================
+   BERSIHKAN TANDA TANGAN
+========================================= */
+
+function clearSignature() {
+
+  if (!canvas || !ctx) {
+    return;
+  }
+
+
+  const rect =
+    canvas.getBoundingClientRect();
+
+
+  ctx.clearRect(
+    0,
+    0,
+    rect.width,
+    rect.height
+  );
+
+
+  hasSignature =
+    false;
+
+}
+
+
+/* =========================================
+   KIRIM PRESENSI
+========================================= */
+
+async function submitAttendance() {
+
+  const button =
+    document.getElementById(
+      'submitButton'
+    );
+
+
+  hideError(
+    'submitError'
+  );
+
+
+  if (!selectedActivity) {
+
+    showSubmitError(
+      'Kegiatan belum dipilih.'
+    );
+
+    return;
+
+  }
+
+
+  if (!currentPerson) {
+
+    showSubmitError(
+      'Data peserta belum ditemukan.'
+    );
+
+    return;
+
+  }
+
+
+  if (!hasSignature) {
+
+    showSubmitError(
+      'Silakan tanda tangan terlebih dahulu.'
+    );
+
+    return;
+
+  }
+
+
+  button.disabled =
+    true;
+
+  button.textContent =
+    'Mengirim...';
+
+
+  try {
+
+    /*
+     * Kompres tanda tangan.
+     */
+
+    const signature =
+      canvas.toDataURL(
+        'image/jpeg',
+        0.65
+      );
+
+
+    const response =
+      await fetch(
+        API_URL,
+        {
+
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'text/plain;charset=utf-8'
+          },
+
+          body: JSON.stringify({
+
+            action:
+              'submitAttendance',
+
+            activityId:
+              selectedActivity.id,
+
+            identitas:
+              currentPerson.identitas,
+
+            signature:
+              signature
+
+          })
+
+        }
+      );
+
+
+    const data =
+      await response.json();
+
+
+    console.log(
+      'Submit:',
+      data
+    );
+
+
+    if (data.success) {
+
+      showSuccess(
+        data
+      );
+
+      return;
+
+    }
+
+
+    if (
+      data.duplicate
+    ) {
+
+      showSubmitError(
+        'Anda sudah melakukan presensi pada kegiatan ini.'
+      );
+
+    }
+
+    else {
+
+      showSubmitError(
+        data.message ||
+        'Presensi gagal dikirim.'
+      );
+
+    }
+
+
+  }
+
+  catch (error) {
+
+    console.error(
+      error
+    );
+
+
+    showSubmitError(
+      'Terjadi kesalahan koneksi. Silakan coba lagi.'
+    );
+
+  }
+
+
+  finally {
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      'Kirim Kehadiran';
+
+  }
+
+}
+
+
+/* =========================================
+   BERHASIL
+========================================= */
+
+function showSuccess(
+  data
+) {
+
+  document
+    .getElementById(
+      'personSection'
+    )
+    .classList
+    .add('hidden');
+
+
+  document
+    .getElementById(
+      'successSection'
+    )
+    .classList
+    .remove('hidden');
+
+
+  document
+    .getElementById(
+      'successInfo'
+    )
+    .innerHTML = `
+
+      <strong>
+        ${escapeHtml(
+          data.nama
+        )}
+      </strong>
+
+      <br>
+
+      ${escapeHtml(
+        data.activity
+      )}
+
+      <br>
+
+      ${escapeHtml(
+        data.timestamp
+      )}
+      WITA
+
+    `;
+
+}
+
+
+/* =========================================
+   ERROR
+========================================= */
 
 function showIdentityError(
   message
@@ -628,42 +1305,47 @@ function showIdentityError(
     message;
 
 
-  error.classList.remove(
-    'hidden'
-  );
+  error.classList
+    .remove('hidden');
 
 }
 
 
-function showError(
+function showSubmitError(
   message
 ) {
 
-  const noActivity =
+  const error =
     document.getElementById(
-      'noActivity'
+      'submitError'
     );
 
 
-  noActivity
-    .querySelector('p')
-    .textContent =
-      message;
+  error.textContent =
+    message;
 
 
-  noActivity
-    .classList.remove(
-      'hidden'
-    );
+  error.classList
+    .remove('hidden');
 
 }
 
 
-/**
- * ============================
- * SECURITY
- * ============================
- */
+function hideError(
+  id
+) {
+
+  document
+    .getElementById(id)
+    .classList
+    .add('hidden');
+
+}
+
+
+/* =========================================
+   ESCAPE HTML
+========================================= */
 
 function escapeHtml(
   text
