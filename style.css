@@ -460,9 +460,10 @@ input:focus {
 
 .logo {
   display: block;
-  width: 180px;
+  width: 260px;
+  max-width: 80%;
   height: auto;
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 /* SMALL SCREEN */
