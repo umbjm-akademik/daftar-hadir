@@ -51,8 +51,8 @@ button {
 
 .logo {
   display: block;
-  width: 300px;
-  max-width: calc(100vw - 40px);
+  width: 420px;
+  max-width: calc(100% - 20px);
   height: auto;
   margin: 0 auto 24px;
 }
