@@ -335,14 +335,31 @@ input:focus {
 }
 
 .clear-button {
-  padding: 0;
+  padding: 7px 12px;
 
-  border: 0;
-  background: transparent;
+  border: 1px solid #d9dce1;
+  border-radius: 9px;
 
-  color: #777b83;
+  background: #f3f4f6;
 
-  font-size: 13px;
+  color: #3f4349;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.15s ease,
+    transform 0.15s ease;
+}
+
+.clear-button:active {
+  transform: scale(0.96);
+}
+
+.clear-button:hover {
+  background: #e9ebee;
 }
 
 .signature-box {
