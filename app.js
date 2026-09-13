@@ -273,14 +273,17 @@ function selectActivity(activity) {
     activity
   );
 
-  selectedActivity = activity;
+  selectedActivity =
+    activity;
+
 
   /*
    * Sembunyikan pilihan kegiatan
    */
   document
     .getElementById('activitySelection')
-    .classList.add('hidden');
+    .classList
+    .add('hidden');
 
 
   /*
@@ -288,11 +291,12 @@ function selectActivity(activity) {
    */
   document
     .getElementById('identitySection')
-    .classList.remove('hidden');
+    .classList
+    .remove('hidden');
 
 
   /*
-   * Isi nama kegiatan
+   * Nama kegiatan
    */
   document
     .getElementById('activityName')
@@ -301,7 +305,7 @@ function selectActivity(activity) {
 
 
   /*
-   * Isi waktu kegiatan
+   * Waktu kegiatan
    */
   document
     .getElementById('activityTime')
@@ -310,16 +314,18 @@ function selectActivity(activity) {
 
 
   /*
-   * Kosongkan input identitas
+   * Bersihkan input
    */
   const identityInput =
-    document.getElementById('identityInput');
+    document.getElementById(
+      'identityInput'
+    );
 
   identityInput.value = '';
 
 
   /*
-   * Fokus ke input
+   * Fokus otomatis ke input
    */
   setTimeout(() => {
 
