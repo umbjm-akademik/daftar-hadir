@@ -1141,6 +1141,304 @@ function clearSignature() {
 
 }
 
+/* =========================================
+   KIRIM PRESENSI
+========================================= */
+
+async function submitAttendance() {
+
+  const button =
+    document.getElementById(
+      'submitButton'
+    );
+
+  hideError('submitError');
+
+
+  /*
+   * Validasi kegiatan
+   */
+  if (!selectedActivity) {
+
+    showSubmitError(
+      'Kegiatan belum dipilih.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Validasi peserta
+   */
+  if (!currentPerson) {
+
+    showSubmitError(
+      'Data peserta belum ditemukan.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Validasi tanda tangan
+   */
+  if (!hasSignature) {
+
+    showSubmitError(
+      'Silakan tanda tangan terlebih dahulu.'
+    );
+
+    return;
+
+  }
+
+
+  /*
+   * Ubah tombol
+   */
+  button.disabled = true;
+
+  button.textContent =
+    'Mengirim...';
+
+
+  try {
+
+    console.log(
+      '1. Menyiapkan tanda tangan...'
+    );
+
+
+    /*
+     * Ubah canvas menjadi JPEG.
+     */
+    const signature =
+      canvas.toDataURL(
+        'image/jpeg',
+        0.65
+      );
+
+
+    console.log(
+      '2. Ukuran data tanda tangan:',
+      signature.length
+    );
+
+
+    /*
+     * Kirim ke Apps Script.
+     */
+    const response =
+      await fetch(
+        API_URL,
+        {
+
+          method: 'POST',
+
+          headers: {
+            'Content-Type':
+              'text/plain;charset=utf-8'
+          },
+
+          body: JSON.stringify({
+
+            action:
+              'submitAttendance',
+
+            activityId:
+              selectedActivity.id,
+
+            identitas:
+              currentPerson.identitas,
+
+            signature:
+              signature
+
+          })
+
+        }
+      );
+
+
+    console.log(
+      '3. HTTP Status:',
+      response.status
+    );
+
+
+    /*
+     * Ambil response sebagai text
+     * agar error lebih mudah dibaca.
+     */
+    const text =
+      await response.text();
+
+
+    console.log(
+      '4. Response Apps Script:',
+      text
+    );
+
+
+    let data;
+
+    try {
+
+      data =
+        JSON.parse(text);
+
+    }
+
+    catch (error) {
+
+      throw new Error(
+        'Response dari server tidak valid.'
+      );
+
+    }
+
+
+    /*
+     * BERHASIL
+     */
+    if (data.success) {
+
+      console.log(
+        '5. Presensi berhasil:',
+        data
+      );
+
+
+      showSuccess(
+        data
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * DUPLIKAT
+     */
+    if (data.duplicate) {
+
+      showSubmitError(
+        'Anda sudah melakukan presensi pada kegiatan ini.'
+      );
+
+      return;
+
+    }
+
+
+    /*
+     * ERROR DARI SERVER
+     */
+    showSubmitError(
+      data.message ||
+      'Presensi gagal dikirim.'
+    );
+
+  }
+
+  catch (error) {
+
+    console.error(
+      'SUBMIT ERROR:',
+      error
+    );
+
+
+    showSubmitError(
+      error.message ||
+      'Terjadi kesalahan saat mengirim presensi.'
+    );
+
+  }
+
+  finally {
+
+    button.disabled =
+      false;
+
+    button.textContent =
+      'Kirim Kehadiran';
+
+  }
+
+}
+
+
+/* =========================================
+   BERHASIL
+========================================= */
+
+function showSuccess(data) {
+
+  /*
+   * Sembunyikan form tanda tangan.
+   */
+  document
+    .getElementById(
+      'personSection'
+    )
+    .classList
+    .add('hidden');
+
+
+  /*
+   * Tampilkan halaman sukses.
+   */
+  const successSection =
+    document.getElementById(
+      'successSection'
+    );
+
+  successSection
+    .classList
+    .remove('hidden');
+
+
+  /*
+   * Tampilkan informasi presensi.
+   */
+  const successInfo =
+    document.getElementById(
+      'successInfo'
+    );
+
+
+  successInfo.innerHTML = `
+
+    <strong>
+      ${escapeHtml(
+        data.nama || currentPerson.nama
+      )}
+    </strong>
+
+    <br>
+
+    ${escapeHtml(
+      data.activity ||
+      selectedActivity.name
+    )}
+
+    <br>
+
+    ${escapeHtml(
+      data.timestamp || ''
+    )}
+    ${data.timestamp ? ' WITA' : ''}
+
+  `;
+
+}
+
 
 /* =========================================
    ERROR
